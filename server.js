@@ -7,8 +7,6 @@ const { db } = require("./firebase.js");
 // Middleware for parsing request bodies
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-// For JSON data format
-app.use(express.json()); 
 
 // Store messages
 let messages = [];
@@ -29,27 +27,27 @@ app.get("/", function(req, res) {
     `);
 });
 
-// Endpoint to receive simple messages
-app.post("/sendMessage", (req, res) => {
-  const { message } = req.body;
-  console.log(`Received Message from Arduino: ${message}`);
-  messages.push(message); // Store the received message
-  res.sendStatus(200); // Send a response back to the Arduino
-
-  // Save the GPS data to Firebase
+// Endpoint to receive GPS data
+app.post("/sendMessage", async (req, res) => {
     try {
-        console.log(req.body);
+        const { message } = req.body;
+        console.log(`Received Message from Arduino: ${message}`);
+        messages.push(message); // Store the received message
+
+        // Save the GPS data to Firebase
         const userJson = {
-            message: req.body.message
+            message: message
         };
-        const response = db.collection("locations").add(userJson);
-        res.send(response);
+        const response = await db.collection("locations").add(userJson);
+        
+        res.status(200).json({ success: true, id: response.id });
     } catch(error) {
-        res.send(error);
+        console.error("Error processing message:", error);
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
 // Start the server
 server.listen(3000, () => {
-  console.log("Server started on port 3000");
+    console.log("Server started on port 3000");
 });
