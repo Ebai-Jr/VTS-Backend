@@ -3,6 +3,7 @@ const bodyParser = require("body-parser");
 const app = express();
 const server = require('http').createServer(app);
 const { db } = require("./firebase.js");
+const { Timestamp } = require('firebase-admin/firestore'); // added timestamp in db and check for undefined messages
 
 // Middleware for parsing request bodies
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -31,12 +32,20 @@ app.get("/", function(req, res) {
 app.post("/sendMessage", async (req, res) => {
     try {
         const { message } = req.body;
+        
+        // Check if message is undefined or null
+        if (message === undefined || message === null) {
+            console.log("Received undefined or null message. Ignoring.");
+            return res.status(400).json({ success: false, error: "Message is undefined or null" });
+        }
+        
         console.log(`Received Message from Arduino: ${message}`);
         messages.push(message); // Store the received message
 
-        // Save the GPS data to Firebase
+        // Save the GPS data to Firebase with a timestamp
         const userJson = {
-            message: message
+            message: message,
+            timestamp: Timestamp.now()
         };
         const response = await db.collection("locations").add(userJson);
         
