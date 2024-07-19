@@ -9,7 +9,7 @@ const { Timestamp } = require('firebase-admin/firestore'); // added timestamp in
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Store messages
+// Store messages//////////////
 let messages = [];
 
 app.get("/", function(req, res) {
@@ -42,12 +42,15 @@ app.post("/sendMessage", async (req, res) => {
         console.log(`Received Message from Arduino: ${message}`);
         messages.push(message); // Store the received message
 
+        // Extract the vehicle ID from the request headers
+        const vehicleId = req.headers['x-vehicle-id'] || 'locations'; // Default to 'locations' if not provided
+
         // Save the GPS data to Firebase with a timestamp
         const userJson = {
             message: message,
             timestamp: Timestamp.now()
         };
-        const response = await db.collection("locations").add(userJson);
+        const response = await db.collection(vehicleId).add(userJson);
         
         res.status(200).json({ success: true, id: response.id });
     } catch(error) {
